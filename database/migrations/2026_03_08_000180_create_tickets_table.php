@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('queue_id')->constrained()->cascadeOnDelete();
             $table->foreignId('citoyen_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('priority_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedInteger('number');
             $table->enum('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS', 'TERMINE', 'ANNULE'])->default('EN_ATTENTE');
             $table->timestamps();

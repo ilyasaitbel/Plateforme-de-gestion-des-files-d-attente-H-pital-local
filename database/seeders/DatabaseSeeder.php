@@ -6,7 +6,6 @@ use App\Models\Administrator;
 use App\Models\Agent;
 use App\Models\Citoyen;
 use App\Models\Hospital;
-use App\Models\Priority;
 use App\Models\Queue;
 use App\Models\Service;
 use App\Models\Ticket;
@@ -45,11 +44,6 @@ class DatabaseSeeder extends Seeder
             'phone'   => '+212600000000',
         ]);
 
-        Agent::create([
-            'user_id'     => $agentUser->id,
-            'hospital_id' => $hospital->id,
-        ]);
-
         $citoyen = Citoyen::create([
             'user_id' => $citoyenUser->id,
         ]);
@@ -67,17 +61,16 @@ class DatabaseSeeder extends Seeder
             'status'         => 'OPEN',
         ]);
 
-        $priority = Priority::create([
-            'level'       => 'NORMAL',
-            'description' => 'Standard priority',
+        Agent::create([
+            'user_id'  => $agentUser->id,
+            'queue_id' => $queue->id,
         ]);
 
         Ticket::create([
-            'queue_id'    => $queue->id,
-            'citoyen_id'  => $citoyen->id,
-            'priority_id' => $priority->id,
-            'number'      => 1,
-            'status'      => 'EN_ATTENTE',
+            'queue_id'   => $queue->id,
+            'citoyen_id' => $citoyen->id,
+            'number'     => 1,
+            'status'     => 'EN_ATTENTE',
         ]);
     }
 }
