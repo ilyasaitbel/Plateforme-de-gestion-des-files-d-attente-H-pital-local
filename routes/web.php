@@ -7,13 +7,10 @@ use App\Http\Controllers\HospitalController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\TicketController;
-use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\CitoyenController;
 use App\Http\Controllers\AdministratorController;
 use App\Http\Controllers\AdminAgentController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PriorityController;
 use App\Http\Controllers\UserController;
 
 /*
@@ -57,14 +54,6 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Notifications (ALL USERS)
-    |--------------------------------------------------------------------------
-    */
-    Route::resource('notifications', NotificationController::class)
-        ->only(['index', 'show', 'destroy']);
-
-    /*
-    |--------------------------------------------------------------------------
     | Tickets
     |--------------------------------------------------------------------------
     */
@@ -77,6 +66,8 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::resource('queues', QueueController::class);
+    Route::post('/queues/{queue}/open', [QueueController::class, 'open'])->name('queues.open');
+    Route::post('/queues/{queue}/close', [QueueController::class, 'close'])->name('queues.close');
     Route::post('/queues/{queue}/call-next', [QueueController::class, 'callNext'])->name('queues.callNext');
 
     /*
@@ -95,7 +86,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
 
         // Core management
-        Route::resource('hospitals', HospitalController::class);
+        Route::get('/hospitals/create', [HospitalController::class, 'create'])->name('hospitals.create');
+        Route::post('/hospitals', [HospitalController::class, 'store'])->name('hospitals.store');
         Route::resource('services', ServiceController::class);
         Route::resource('citoyens', CitoyenController::class);
         Route::resource('agents', AgentController::class);
