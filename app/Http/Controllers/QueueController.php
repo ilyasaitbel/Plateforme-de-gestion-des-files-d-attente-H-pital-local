@@ -11,7 +11,7 @@ class QueueController extends Controller
 {
     public function index(Request $request)
     {
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
+        $hospitalId = $this->getAdministratorHospitalId($request);
 
         $queues = Queue::with('service')
             ->whereHas('service', function ($query) use ($hospitalId) {
@@ -24,23 +24,18 @@ class QueueController extends Controller
 
     public function create(Request $request)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAdmin();
 
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
-        $services = Service::where('hospital_id', $hospitalId)
-            ->whereDoesntHave('queues')
-            ->get();
+        $services = $this->availableServicesForHospital(
+            $this->getAdministratorHospitalId($request)
+        )->get();
 
         return view('queues.create', compact('services'));
     }
 
     public function store(Request $request)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAdmin();
 
         $data = $request->validate([
             'service_id' => 'required|exists:services,id',
@@ -51,7 +46,7 @@ class QueueController extends Controller
             'service_id' => $data['service_id'],
             'name' => $data['name'],
             'current_number' => 0,
-            'status' => 'OPEN'
+            'status' => 'OPEN',
         ]);
 
         return redirect()->route('queues.index');
@@ -64,31 +59,24 @@ class QueueController extends Controller
 
     public function edit(Request $request, Queue $queue)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAdmin();
 
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
-        $services = Service::where('hospital_id', $hospitalId)
-            ->where(function ($query) use ($queue) {
-                $query->whereDoesntHave('queues')
-                    ->orWhere('id', $queue->service_id);
-            })
-            ->get();
+        $services = $this->availableServicesForHospital(
+            $this->getAdministratorHospitalId($request),
+            $queue->service_id
+        )->get();
 
-        return view('queues.edit', compact('queue','services'));
+        return view('queues.edit', compact('queue', 'services'));
     }
 
     public function update(Request $request, Queue $queue)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAdmin();
 
         $data = $request->validate([
             'service_id' => 'required|exists:services,id',
             'name' => 'required|string|max:255',
-            'status' => 'required'
+            'status' => 'required',
         ]);
 
         $queue->update($data);
@@ -98,9 +86,7 @@ class QueueController extends Controller
 
     public function destroy(Queue $queue)
     {
-        if (!auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAdmin();
 
         $queue->delete();
 
@@ -109,9 +95,7 @@ class QueueController extends Controller
 
     public function open(Queue $queue)
     {
-        if (!auth()->user()->isAgent() && !auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAgentOrAdmin();
 
         $queue->update([
             'status' => 'OPEN',
@@ -122,9 +106,7 @@ class QueueController extends Controller
 
     public function close(Queue $queue)
     {
-        if (!auth()->user()->isAgent() && !auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAgentOrAdmin();
 
         $queue->update([
             'status' => 'CLOSED',
@@ -135,9 +117,7 @@ class QueueController extends Controller
 
     public function callNext(Queue $queue)
     {
-        if (!auth()->user()->isAgent() && !auth()->user()->isAdmin()) {
-            abort(403);
-        }
+        $this->abortUnlessAgentOrAdmin();
 
         if ($queue->status !== 'OPEN') {
             return redirect()->back()->withErrors([
@@ -169,5 +149,36 @@ class QueueController extends Controller
         $queue->save();
 
         return redirect()->back()->with('success', 'Le ticket ' . $ticket->number . ' a été appelé.');
+    }
+
+    private function getAdministratorHospitalId(Request $request)
+    {
+        return optional(optional($request->user())->administrator)->hospital_id;
+    }
+
+    private function availableServicesForHospital($hospitalId, $currentServiceId = null)
+    {
+        return Service::where('hospital_id', $hospitalId)
+            ->where(function ($query) use ($currentServiceId) {
+                $query->whereDoesntHave('queues');
+
+                if ($currentServiceId) {
+                    $query->orWhere('id', $currentServiceId);
+                }
+            });
+    }
+
+    private function abortUnlessAdmin()
+    {
+        if (! auth()->user()->isAdmin()) {
+            abort(403);
+        }
+    }
+
+    private function abortUnlessAgentOrAdmin()
+    {
+        if (! auth()->user()->isAgent() && ! auth()->user()->isAdmin()) {
+            abort(403);
+        }
     }
 }

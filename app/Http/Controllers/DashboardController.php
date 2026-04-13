@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Hospital;
-use App\Models\Service;
 use App\Models\Agent;
 use App\Models\Citoyen;
 use App\Models\Ticket;
@@ -15,42 +13,33 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // ================= ADMIN =================
         if ($user->isAdmin()) {
-
             $admin = $user->administrator;
-            
-            if (!$admin->hospital) {
+
+            if (! $admin->hospital) {
                 return redirect()->route('hospitals.create');
             }
 
             $hospital = $admin->hospital;
-
-            $hospitals_count = 1;
-
-            $services_count = $hospital->services()->count();
-
-            $agents_count = Agent::whereHas('queue.service', function ($q) use ($hospital) {
-                $q->where('hospital_id', $hospital->id);
-            })->count();
-
-            $citoyens_count = Citoyen::whereHas('tickets.queue.service', function ($q) use ($hospital) {
-                $q->where('hospital_id', $hospital->id);
-            })->count();
-
-            $tickets_query = Ticket::whereHas('queue.service', function ($q) use ($hospital) {
-                $q->where('hospital_id', $hospital->id);
+            $ticketsQuery = Ticket::whereHas('queue.service', function ($query) use ($hospital) {
+                $query->where('hospital_id', $hospital->id);
             });
 
-            $tickets_count = (clone $tickets_query)
+            $hospitals_count = 1;
+            $services_count = $hospital->services()->count();
+            $agents_count = Agent::whereHas('queue.service', function ($query) use ($hospital) {
+                $query->where('hospital_id', $hospital->id);
+            })->count();
+            $citoyens_count = Citoyen::whereHas('tickets.queue.service', function ($query) use ($hospital) {
+                $query->where('hospital_id', $hospital->id);
+            })->count();
+            $tickets_count = (clone $ticketsQuery)
                 ->whereDate('created_at', today())
                 ->count();
-
-            $pending_tickets = (clone $tickets_query)
+            $pending_tickets = (clone $ticketsQuery)
                 ->where('status', 'EN_ATTENTE')
                 ->count();
-
-            $finished_tickets = (clone $tickets_query)
+            $finished_tickets = (clone $ticketsQuery)
                 ->where('status', 'TERMINE')
                 ->count();
 
@@ -66,17 +55,13 @@ class DashboardController extends Controller
             ));
         }
 
-        // ================= AGENT =================
         if ($user->isAgent()) {
-
             $agent = $user->agent;
             $agent?->load('queue.service.hospital');
 
             $current_queue = $agent?->queue?->load('service.hospital');
-
             $hospital = optional(optional($current_queue)->service)->hospital;
             $queues = $current_queue ? collect([$current_queue]) : collect();
-
             $waiting_tickets = collect();
             $waiting_count = 0;
             $current_ticket = null;
@@ -113,25 +98,22 @@ class DashboardController extends Controller
             ));
         }
 
-        // ================= CITOYEN =================
         if ($user->isCitoyen()) {
-
             $citoyen = $user->citoyen;
-
             $active_ticket = null;
             $ticket_history = collect();
             $queue_position = null;
             $estimated_wait = null;
 
             if ($citoyen) {
-                $active_ticket = $citoyen->tickets()
-                    ->with('queue.service.hospital')
+                $tickets = $citoyen->tickets()->with('queue.service.hospital');
+
+                $active_ticket = (clone $tickets)
                     ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
                     ->latest()
                     ->first();
 
-                $ticket_history = $citoyen->tickets()
-                    ->with('queue.service.hospital')
+                $ticket_history = (clone $tickets)
                     ->latest()
                     ->get();
 

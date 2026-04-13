@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Administrator;
 use App\Models\Hospital;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,13 +12,13 @@ class HospitalController extends Controller
     public function index()
     {
         $hospitals = Hospital::all();
+
         return view('hospitals.index', compact('hospitals'));
     }
 
     public function create()
     {
-        $user = Auth::user();
-        $admin = $user?->administrator;
+        $admin = $this->administrator();
 
         if ($admin && $admin->hospital_id) {
             return redirect()->route('dashboard');
@@ -31,18 +32,17 @@ class HospitalController extends Controller
         $data = $request->validate([
             'name' => 'required',
             'address' => 'required',
-            'phone' => 'required'
+            'phone' => 'required',
         ]);
 
         $hospital = Hospital::create($data);
-
         $user = Auth::user();
-        $admin = $user?->administrator;
+        $admin = $this->administrator();
 
         if (!$admin) {
-            \App\Models\Administrator::create([
+            Administrator::create([
                 'user_id' => $user->id,
-                'hospital_id' => $hospital->id
+                'hospital_id' => $hospital->id,
             ]);
         } else {
             $admin->hospital_id = $hospital->id;
@@ -50,5 +50,10 @@ class HospitalController extends Controller
         }
 
         return redirect()->route('dashboard');
+    }
+
+    private function administrator()
+    {
+        return Auth::user()?->administrator;
     }
 }

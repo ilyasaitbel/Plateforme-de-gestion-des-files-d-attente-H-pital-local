@@ -11,7 +11,7 @@ class AgentController extends Controller
 {
     public function index(Request $request)
     {
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
+        $hospitalId = $this->getAdministratorHospitalId($request);
 
         $agents = Agent::with(['user', 'queue.service.hospital'])
             ->when($hospitalId, function ($query) use ($hospitalId) {
@@ -26,15 +26,9 @@ class AgentController extends Controller
 
     public function create(Request $request)
     {
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
-
-        $queues = Queue::with('service.hospital')
-            ->whereHas('service', function ($serviceQuery) use ($hospitalId) {
-                $serviceQuery->where('hospital_id', $hospitalId);
-            })
-            ->whereDoesntHave('agents')
-            ->orderBy('name')
-            ->get();
+        $queues = $this->availableQueuesForHospital(
+            $this->getAdministratorHospitalId($request)
+        )->get();
 
         return view('agents.create', compact('queues'));
     }
@@ -74,18 +68,10 @@ class AgentController extends Controller
     {
         $agent->load('queue.service.hospital');
 
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
-
-        $queues = Queue::with('service.hospital')
-            ->whereHas('service', function ($serviceQuery) use ($hospitalId) {
-                $serviceQuery->where('hospital_id', $hospitalId);
-            })
-            ->where(function ($query) use ($agent) {
-                $query->whereDoesntHave('agents')
-                    ->orWhere('id', $agent->queue_id);
-            })
-            ->orderBy('name')
-            ->get();
+        $queues = $this->availableQueuesForHospital(
+            $this->getAdministratorHospitalId($request),
+            $agent->queue_id
+        )->get();
 
         return view('agents.edit', compact('agent', 'queues'));
     }
@@ -103,12 +89,33 @@ class AgentController extends Controller
         return redirect()->route('agents.index')
             ->with('success', 'Agent updated');
     }
-    
+
     public function destroy(Agent $agent)
     {
         $agent->delete();
 
         return redirect()->route('agents.index')
             ->with('success', 'Agent deleted');
+    }
+
+    private function getAdministratorHospitalId(Request $request)
+    {
+        return optional(optional($request->user())->administrator)->hospital_id;
+    }
+
+    private function availableQueuesForHospital($hospitalId, $currentQueueId = null)
+    {
+        return Queue::with('service.hospital')
+            ->whereHas('service', function ($serviceQuery) use ($hospitalId) {
+                $serviceQuery->where('hospital_id', $hospitalId);
+            })
+            ->where(function ($query) use ($currentQueueId) {
+                $query->whereDoesntHave('agents');
+
+                if ($currentQueueId) {
+                    $query->orWhere('id', $currentQueueId);
+                }
+            })
+            ->orderBy('name');
     }
 }

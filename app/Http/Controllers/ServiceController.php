@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Service;
 use App\Models\Hospital;
+use App\Models\Service;
 use Illuminate\Http\Request;
 
 class ServiceController extends Controller
 {
     public function index(Request $request)
     {
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
+        $hospitalId = $this->getAdministratorHospitalId($request);
 
         $services = Service::with('hospital')
             ->when($hospitalId, function ($query) use ($hospitalId) {
@@ -28,9 +28,9 @@ class ServiceController extends Controller
 
     public function store(Request $request)
     {
-        $hospitalId = optional(optional($request->user())->administrator)->hospital_id;
+        $hospitalId = $this->getAdministratorHospitalId($request);
 
-        if (!$hospitalId) {
+        if (! $hospitalId) {
             return back()
                 ->withInput()
                 ->with('error', 'Aucun hôpital n’est associé à votre compte administrateur.');
@@ -56,7 +56,8 @@ class ServiceController extends Controller
     public function edit(Service $service)
     {
         $hospitals = Hospital::all();
-        return view('services.edit', compact('service','hospitals'));
+
+        return view('services.edit', compact('service', 'hospitals'));
     }
 
     public function update(Request $request, Service $service)
@@ -77,5 +78,10 @@ class ServiceController extends Controller
         $service->delete();
 
         return redirect()->route('services.index');
+    }
+
+    private function getAdministratorHospitalId(Request $request)
+    {
+        return optional(optional($request->user())->administrator)->hospital_id;
     }
 }

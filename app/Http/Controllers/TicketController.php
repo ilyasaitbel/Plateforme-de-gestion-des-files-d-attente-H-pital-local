@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ticket;
-use App\Models\Queue;
 use App\Models\Citoyen;
 use App\Models\Hospital;
+use App\Models\Queue;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,49 +17,38 @@ class TicketController extends Controller
         $user = auth()->user();
         $status = $request->string('status')->toString();
 
+        $tickets = Ticket::with(['queue.service.hospital', 'citoyen'])
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            });
+
         if ($user->isAdmin()) {
             $hospitalId = optional($user->administrator)->hospital_id;
 
-            $tickets = Ticket::with(['queue.service.hospital', 'citoyen'])
-                ->when($hospitalId, function ($query) use ($hospitalId) {
-                    $query->whereHas('queue.service', function ($serviceQuery) use ($hospitalId) {
-                        $serviceQuery->where('hospital_id', $hospitalId);
-                    });
-                })
-                ->when($status, function ($query) use ($status) {
-                    $query->where('status', $status);
-                })
-                ->latest()
-                ->get();
+            $tickets->when($hospitalId, function ($query) use ($hospitalId) {
+                $query->whereHas('queue.service', function ($serviceQuery) use ($hospitalId) {
+                    $serviceQuery->where('hospital_id', $hospitalId);
+                });
+            });
         } elseif ($user->isAgent()) {
             $queueId = optional($user->agent)->queue_id;
 
-            $tickets = Ticket::with(['queue.service.hospital', 'citoyen'])
-                ->when($queueId, function ($query) use ($queueId) {
-                    $query->where('queue_id', $queueId);
-                }, function ($query) {
-                    $query->whereRaw('1 = 0');
-                })
-                ->when($status, function ($query) use ($status) {
-                    $query->where('status', $status);
-                })
-                ->latest()
-                ->get();
+            $tickets->when($queueId, function ($query) use ($queueId) {
+                $query->where('queue_id', $queueId);
+            }, function ($query) {
+                $query->whereRaw('1 = 0');
+            });
         } else {
             $citoyenId = optional($user->citoyen)->id;
 
-            $tickets = Ticket::with(['queue.service.hospital', 'citoyen'])
-                ->when($citoyenId, function ($query) use ($citoyenId) {
-                    $query->where('citoyen_id', $citoyenId);
-                }, function ($query) {
-                    $query->whereRaw('1 = 0');
-                })
-                ->when($status, function ($query) use ($status) {
-                    $query->where('status', $status);
-                })
-                ->latest()
-                ->get();
+            $tickets->when($citoyenId, function ($query) use ($citoyenId) {
+                $query->where('citoyen_id', $citoyenId);
+            }, function ($query) {
+                $query->whereRaw('1 = 0');
+            });
         }
+
+        $tickets = $tickets->latest()->get();
 
         $statuses = [
             'EN_ATTENTE' => 'En attente',
@@ -73,15 +62,7 @@ class TicketController extends Controller
     public function create()
     {
         $user = auth()->user();
-        $existingActiveTicket = null;
-
-        if ($user->isCitoyen() && $user->citoyen) {
-            $existingActiveTicket = Ticket::with('queue.service.hospital')
-                ->where('citoyen_id', $user->citoyen->id)
-                ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
-                ->latest()
-                ->first();
-        }
+        $existingActiveTicket = $this->getExistingActiveTicket($user);
 
         if ($user->isAgent()) {
             $agentQueue = Queue::with('service.hospital')
@@ -92,21 +73,7 @@ class TicketController extends Controller
             $hospitals = $agentQueue && $agentQueue->service && $agentQueue->service->hospital
                 ? collect([$agentQueue->service->hospital])
                 : collect();
-
-            $services = $queues
-                ->map(function ($queue) {
-                    return [
-                        'id' => $queue->service->id,
-                        'name' => $queue->service->name,
-                        'hospital_id' => $queue->service->hospital->id,
-                        'hospital_name' => $queue->service->hospital->name,
-                        'queue_id' => $queue->id,
-                        'queue_name' => $queue->name,
-                        'queue_status' => $queue->status,
-                    ];
-                })
-                ->values();
-
+            $services = $this->formatServices($queues);
             $citoyens = collect();
 
             return view('tickets.create', compact('queues', 'citoyens', 'hospitals', 'services', 'agentQueue', 'existingActiveTicket'));
@@ -120,27 +87,10 @@ class TicketController extends Controller
             ->orderBy('name')
             ->get();
 
-        $services = $queues
-            ->map(function ($queue) {
-                return [
-                    'id' => $queue->service->id,
-                    'name' => $queue->service->name,
-                    'hospital_id' => $queue->service->hospital->id,
-                    'hospital_name' => $queue->service->hospital->name,
-                    'queue_id' => $queue->id,
-                    'queue_name' => $queue->name,
-                    'queue_status' => $queue->status,
-                ];
-            })
-            ->unique('id')
-            ->sortBy('name')
-            ->values();
-
-        if ($user->isCitoyen()) {
-            $citoyens = collect([$user->citoyen])->filter();
-        } else {
-            $citoyens = Citoyen::with('user')->get();
-        }
+        $services = $this->formatServices($queues, true);
+        $citoyens = $user->isCitoyen()
+            ? collect([$user->citoyen])->filter()
+            : Citoyen::with('user')->get();
 
         $agentQueue = null;
 
@@ -187,30 +137,7 @@ class TicketController extends Controller
                 ])->withInput();
             }
 
-            $citoyenName = trim((string) $request->input('citoyen_name'));
-            $existingCitoyen = Citoyen::with('user')
-                ->whereHas('user', function ($query) use ($citoyenName) {
-                    $query->where('name', $citoyenName);
-                })
-                ->first();
-
-            if ($existingCitoyen) {
-                $citoyenId = $existingCitoyen->id;
-            } else {
-                $email = 'citoyen+' . Str::slug($citoyenName, '.') . '.' . Str::lower(Str::random(6)) . '@hospital.local';
-
-                $citoyenUser = User::create([
-                    'name' => $citoyenName,
-                    'email' => $email,
-                    'password' => Str::random(12),
-                ]);
-
-                $citoyen = Citoyen::create([
-                    'user_id' => $citoyenUser->id,
-                ]);
-
-                $citoyenId = $citoyen->id;
-            }
+            $citoyenId = $this->findOrCreateCitoyenIdByName($request->input('citoyen_name'));
         } else {
             $citoyenId = $user->isCitoyen()
                 ? optional($user->citoyen)->id
@@ -265,5 +192,67 @@ class TicketController extends Controller
         $ticket->save();
 
         return redirect()->route('tickets.index');
+    }
+
+    private function getExistingActiveTicket($user)
+    {
+        if (! $user->isCitoyen() || ! $user->citoyen) {
+            return null;
+        }
+
+        return Ticket::with('queue.service.hospital')
+            ->where('citoyen_id', $user->citoyen->id)
+            ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
+            ->latest()
+            ->first();
+    }
+
+    private function formatServices($queues, $unique = false)
+    {
+        $services = $queues
+            ->map(function ($queue) {
+                return [
+                    'id' => $queue->service->id,
+                    'name' => $queue->service->name,
+                    'hospital_id' => $queue->service->hospital->id,
+                    'hospital_name' => $queue->service->hospital->name,
+                    'queue_id' => $queue->id,
+                    'queue_name' => $queue->name,
+                    'queue_status' => $queue->status,
+                ];
+            });
+
+        if ($unique) {
+            $services = $services->unique('id')->sortBy('name');
+        }
+
+        return $services->values();
+    }
+
+    private function findOrCreateCitoyenIdByName($citoyenName)
+    {
+        $citoyenName = trim((string) $citoyenName);
+
+        $existingCitoyen = Citoyen::with('user')
+            ->whereHas('user', function ($query) use ($citoyenName) {
+                $query->where('name', $citoyenName);
+            })
+            ->first();
+
+        if ($existingCitoyen) {
+            return $existingCitoyen->id;
+        }
+
+        $email = 'citoyen+' . Str::slug($citoyenName, '.') . '.' . Str::lower(Str::random(6)) . '@hospital.local';
+
+        $citoyenUser = User::create([
+            'name' => $citoyenName,
+            'email' => $email,
+            'password' => Str::random(12),
+        ]);
+
+        return Citoyen::create([
+            'user_id' => $citoyenUser->id,
+        ])->id;
     }
 }

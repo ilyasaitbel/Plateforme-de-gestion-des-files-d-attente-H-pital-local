@@ -17,7 +17,7 @@ class CitoyenController extends Controller
         if ($user && $user->role === 'admin') {
             $hospitalId = $user->administrator->hospital_id ?? null;
 
-            if (!$hospitalId) {
+            if (! $hospitalId) {
                 $citoyens = collect();
 
                 return view('citoyens', compact('citoyens'));
@@ -40,12 +40,14 @@ class CitoyenController extends Controller
     public function show(Citoyen $citoyen)
     {
         $citoyen->load(['user', 'tickets']);
+
         return view('citoyens.show', compact('citoyen'));
     }
 
     public function create()
     {
         $users = User::all();
+
         return view('citoyens.create', compact('users'));
     }
 
@@ -63,6 +65,7 @@ class CitoyenController extends Controller
     public function edit(Citoyen $citoyen)
     {
         $users = User::all();
+
         return view('citoyens.edit', compact('citoyen', 'users'));
     }
 
@@ -90,14 +93,14 @@ class CitoyenController extends Controller
             'queue_id' => 'required|exists:queues,id',
         ]);
 
-        $queue  = Queue::findOrFail($data['queue_id']);
-        $number = Ticket::where('queue_id', $queue->id)->max('number') + 1;
+        $queue = Queue::findOrFail($data['queue_id']);
+        $number = (Ticket::where('queue_id', $queue->id)->max('number') ?? 0) + 1;
 
         Ticket::create([
-            'queue_id'   => $queue->id,
+            'queue_id' => $queue->id,
             'citoyen_id' => $citoyen->id,
-            'number'     => $number,
-            'status'     => 'EN_ATTENTE',
+            'number' => $number,
+            'status' => 'EN_ATTENTE',
         ]);
 
         return redirect()->route('tickets.index');
