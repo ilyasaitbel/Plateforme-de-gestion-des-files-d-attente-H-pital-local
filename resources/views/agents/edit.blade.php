@@ -10,12 +10,12 @@
     @method('PUT')
 
     <div class="mb-4">
-        <label>Hospital</label>
-        <select name="hospital_id" class="w-full border p-2 rounded">
-            @foreach($hospitals as $hospital)
-                <option value="{{ $hospital->id }}"
-                    {{ $agent->hospital_id == $hospital->id ? 'selected' : '' }}>
-                    {{ $hospital->name }}
+        <label for="queue_id">Queue</label>
+        <select id="queue_id" name="queue_id" class="w-full border p-2 rounded">
+            @foreach($queues as $queue)
+                <option value="{{ $queue->id }}"
+                    {{ old('queue_id', $agent->queue_id) == $queue->id ? 'selected' : '' }}>
+                    {{ $queue->name }} — {{ $queue->service->name }} ({{ $queue->service->hospital->name }})
                 </option>
             @endforeach
         </select>

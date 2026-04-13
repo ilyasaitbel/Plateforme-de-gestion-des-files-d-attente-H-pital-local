@@ -1,9 +1,49 @@
 @extends('layouts.app')
 @section('title', 'Hôpital')
 @section('content')
-<div class="page-header">
-    <h1>🏥 {{ $hospital->name }}</h1>
-    <a href="{{ route('hospitals.index') }}" class="btn btn-outline">← Retour</a>
+<style>
+    .hospital-show-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .hospital-show-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .emoji-icon-img,
+    .section-icon-img,
+    .button-icon-img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        vertical-align: middle;
+        flex-shrink: 0;
+    }
+
+    .hospital-show-title .section-icon-img {
+        width: 24px;
+        height: 24px;
+    }
+
+    .form-actions .btn,
+    .form-actions button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
+
+<div class="page-header hospital-show-header">
+    <h1 class="hospital-show-title">
+        <img src="https://cdn-icons-png.flaticon.com/512/2967/2967350.png" alt="" class="section-icon-img">
+        <span>{{ $hospital->name }}</span>
+    </h1>
+    <a href="{{ route('hospitals.index') }}" class="btn btn-outline">Retour</a>
 </div>
 <div class="card" style="max-width:600px">
     <div style="display:flex;flex-direction:column;gap:14px">
@@ -25,10 +65,16 @@
         </div>
     </div>
     <div class="form-actions" style="margin-top:20px">
-        <a href="{{ route('hospitals.edit', $hospital) }}" class="btn btn-warning">✏️ Modifier</a>
+        <a href="{{ route('hospitals.edit', $hospital) }}" class="btn btn-warning">
+            <img src="https://cdn-icons-png.flaticon.com/512/1159/1159633.png" alt="" class="button-icon-img">
+            <span>Modifier</span>
+        </a>
         <form method="POST" action="{{ route('hospitals.destroy', $hospital) }}">
             @csrf @method('DELETE')
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ?')">🗑️ Supprimer</button>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer ?')">
+                <img src="https://cdn-icons-png.flaticon.com/512/1214/1214428.png" alt="" class="button-icon-img">
+                <span>Supprimer</span>
+            </button>
         </form>
     </div>
 </div>
