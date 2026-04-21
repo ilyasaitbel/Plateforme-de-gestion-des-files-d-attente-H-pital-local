@@ -16,61 +16,100 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminUser = User::create([
-            'name'     => 'Admin User',
-            'email'    => 'admin@hospital.local',
-            'password' => bcrypt('password123'),
-        ]);
+        // Boucle pour créer plusieurs hôpitaux
+        for ($i = 1; $i <= 20; $i++) {
 
-        Administrator::create([
-            'user_id' => $adminUser->id,
-        ]);
+            // Création d’un hôpital
+            $hospital = Hospital::create([
+                'name'    => 'Hospital ' . $i,
+                'address' => 'Address ' . $i . ', Casablanca',
+                'phone'   => '+21260000' . $i,
+            ]);
 
-        $agentUser = User::create([
-            'name'     => 'Agent User',
-            'email'    => 'agent@hospital.local',
-            'password' => bcrypt('password123'),
-        ]);
+            // Création du manager (un seul par hôpital)
+            $managerUser = User::create([
+                'name'     => 'Manager ' . $i,
+                'email'    => 'manager' . $i . '@hospital.local',
+                'password' => bcrypt('123123'),
+            ]);
 
-        $citoyenUser = User::create([
-            'name'     => 'Citoyen User',
-            'email'    => 'citoyen@hospital.local',
-            'password' => bcrypt('password123'),
-        ]);
+            // Association manager → hôpital
+            Administrator::create([
+                'user_id'     => $managerUser->id,
+                'hospital_id' => $hospital->id,
+            ]);
 
-        $hospital = Hospital::create([
-            'name'    => 'Local Hospital',
-            'address' => 'Main Avenue, Casablanca',
-            'phone'   => '+212600000000',
-        ]);
+            // Tableau pour stocker les files d’attente (queues)
+            $queues = [];
 
-        $citoyen = Citoyen::create([
-            'user_id' => $citoyenUser->id,
-        ]);
+            // Création des services et des queues
+            for ($s = 1; $s <= 3; $s++) {
 
-        $service = Service::create([
-            'hospital_id' => $hospital->id,
-            'name'        => 'General Consultation',
-            'description' => 'Walk-in consultation service',
-        ]);
+                // Création d’un service
+                $service = Service::create([
+                    'hospital_id' => $hospital->id,
+                    'name'        => 'Service ' . $s . ' - H' . $i,
+                    'description' => 'Description service ' . $s,
+                ]);
 
-        $queue = Queue::create([
-            'service_id'     => $service->id,
-            'name'           => 'Consultation Queue',
-            'current_number' => 0,
-            'status'         => 'OPEN',
-        ]);
+                // Création d’une queue liée au service
+                $queue = Queue::create([
+                    'service_id'     => $service->id,
+                    'name'           => 'Queue ' . $s . ' - H' . $i,
+                    'current_number' => 0,
+                    'status'         => 'OPEN',
+                ]);
 
-        Agent::create([
-            'user_id'  => $agentUser->id,
-            'queue_id' => $queue->id,
-        ]);
+                // Ajout dans le tableau
+                $queues[] = $queue;
+            }
 
-        Ticket::create([
-            'queue_id'   => $queue->id,
-            'citoyen_id' => $citoyen->id,
-            'number'     => 1,
-            'status'     => 'EN_ATTENTE',
-        ]);
+            // Création des agents
+            for ($a = 1; $a <= 3; $a++) {
+
+                $agentUser = User::create([
+                    'name'     => 'Agent ' . $i . '_' . $a,
+                    'email'    => 'agent' . $i . '_' . $a . '@hospital.local',
+                    'password' => bcrypt('123123'),
+                ]);
+
+                // Affectation à une queue aléatoire
+                Agent::create([
+                    'user_id'  => $agentUser->id,
+                    'queue_id' => $queues[array_rand($queues)]->id,
+                ]);
+            }
+
+            // Initialisation d’un compteur pour chaque queue
+            $queueCounters = [];
+            foreach ($queues as $q) {
+                $queueCounters[$q->id] = 1;
+            }
+
+            // Création des citoyens avec un seul ticket chacun
+            for ($c = 1; $c <= 10; $c++) {
+
+                $citoyenUser = User::create([
+                    'name'     => 'Citoyen ' . $i . '_' . $c,
+                    'email'    => 'citoyen' . $i . '_' . $c . '@hospital.local',
+                    'password' => bcrypt('123123'),
+                ]);
+
+                $citoyen = Citoyen::create([
+                    'user_id' => $citoyenUser->id,
+                ]);
+
+                // Choisir une queue aléatoirement
+                $queue = $queues[array_rand($queues)];
+
+                // Création d’un seul ticket par citoyen
+                Ticket::create([
+                    'queue_id'   => $queue->id,
+                    'citoyen_id' => $citoyen->id,
+                    'number'     => $queueCounters[$queue->id]++, // numéro unique par queue
+                    'status'     => 'EN_ATTENTE',
+                ]);
+            }
+        }
     }
 }
