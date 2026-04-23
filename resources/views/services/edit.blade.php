@@ -1,34 +1,50 @@
 @extends('layouts.app')
 
+@section('title', 'Modifier un service')
+
 @section('content')
+<div class="card" style="max-width: 860px; margin: 0 auto; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 45%, #93c5fd 100%); border: 1px solid rgba(37, 99, 235, 0.18); box-shadow: 0 24px 55px rgba(37, 99, 235, 0.16);">
+    <div class="card-header" style="margin-bottom: 24px;">
+        <div>
+            <div class="card-title" style="font-size: 30px; margin-bottom: 8px;">Modifier un service</div>
+            <p style="color: #365277; font-weight: 600;">
+                Sélectionnez l’hôpital du service puis mettez à jour ses informations.
+            </p>
+        </div>
+    </div>
 
-<h2>Edit Service</h2>
+    <form method="POST" action="{{ route('services.update', $service->id) }}">
+        @csrf
+        @method('PUT')
 
-<form method="POST" action="{{ route('services.update',$service->id) }}">
-    @csrf
-    @method('PUT')
+        <div style="display: grid; gap: 22px;">
+            <div>
+                <label for="name">Nom du service</label>
+                <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value="{{ old('name', $service->name) }}"
+                    placeholder="Ex: Radiologie"
+                    required
+                >
+            </div>
 
-    <select name="hospital_id">
-        @foreach($hospitals as $hospital)
-            <option value="{{ $hospital->id }}" 
-                {{ $hospital->id == $service->hospital_id ? 'selected' : '' }}>
-                {{ $hospital->name }}
-            </option>
-        @endforeach
-    </select>
+            <div>
+                <label for="description">Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="5"
+                    placeholder="Décrivez brièvement le service"
+                >{{ old('description', $service->description) }}</textarea>
+            </div>
 
-    <br><br>
-
-    <input type="text" name="name" value="{{ $service->name }}">
-
-    <br><br>
-
-    <textarea name="description">{{ $service->description }}</textarea>
-
-    <br><br>
-
-    <button type="submit">Update</button>
-
-</form>
-
+            <div style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 8px;">
+                <a href="{{ route('services.index') }}" class="btn btn-outline">Annuler</a>
+                <button type="submit" class="btn btn-success">Mettre à jour</button>
+            </div>
+        </div>
+    </form>
+</div>
 @endsection
