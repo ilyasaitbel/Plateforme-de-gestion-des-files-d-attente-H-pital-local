@@ -33,7 +33,11 @@ class AdminAgentController extends Controller
             'hospital_id' => 'required|exists:hospitals,id',
         ]);
 
-        $user = User::create($this->userData($data));
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
 
         Agent::create([
             'user_id' => $user->id,
@@ -48,14 +52,5 @@ class AdminAgentController extends Controller
         $agent->user()->delete();
 
         return redirect()->route('admin.agents.index');
-    }
-
-    private function userData(array $data): array
-    {
-        return [
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ];
     }
 }

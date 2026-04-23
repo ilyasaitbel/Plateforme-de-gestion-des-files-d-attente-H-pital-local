@@ -11,7 +11,7 @@ class AgentController extends Controller
 {
     public function index(Request $request)
     {
-        $hospitalId = $this->getAdministratorHospitalId($request);
+        $hospitalId = $request->user()->administrator->hospital_id;
 
         $agents = Agent::with(['user', 'queue.service.hospital'])
             ->when($hospitalId, function ($query) use ($hospitalId) {
@@ -26,9 +26,9 @@ class AgentController extends Controller
 
     public function create(Request $request)
     {
-        $queues = $this->availableQueuesForHospital(
-            $this->getAdministratorHospitalId($request)
-        )->get();
+        $hospitalId = $request->user()->administrator->hospital_id;
+
+        $queues = $this->availableQueuesForHospital($hospitalId)->get();
 
         return view('agents.create', compact('queues'));
     }
@@ -68,10 +68,9 @@ class AgentController extends Controller
     {
         $agent->load('queue.service.hospital');
 
-        $queues = $this->availableQueuesForHospital(
-            $this->getAdministratorHospitalId($request),
-            $agent->queue_id
-        )->get();
+        $hospitalId = $request->user()->administrator->hospital_id;
+
+        $queues = $this->availableQueuesForHospital($hospitalId, $agent->queue_id)->get();
 
         return view('agents.edit', compact('agent', 'queues'));
     }
@@ -96,11 +95,6 @@ class AgentController extends Controller
 
         return redirect()->route('agents.index')
             ->with('success', 'Agent deleted');
-    }
-
-    private function getAdministratorHospitalId(Request $request)
-    {
-        return optional(optional($request->user())->administrator)->hospital_id;
     }
 
     private function availableQueuesForHospital($hospitalId, $currentQueueId = null)

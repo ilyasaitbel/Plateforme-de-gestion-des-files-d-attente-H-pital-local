@@ -63,7 +63,6 @@ class ServiceController extends Controller
     public function update(Request $request, Service $service)
     {
         $data = $request->validate([
-            'hospital_id' => 'required|exists:hospitals,id',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
