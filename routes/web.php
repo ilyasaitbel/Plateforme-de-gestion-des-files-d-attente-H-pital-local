@@ -9,7 +9,6 @@ use App\Http\Controllers\QueueController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\CitoyenController;
-use App\Http\Controllers\AdministratorController;
 use App\Http\Controllers\AdminAgentController;
 use App\Http\Controllers\UserController;
 
@@ -92,14 +91,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('citoyens', CitoyenController::class);
         Route::resource('agents', AgentController::class);
         Route::resource('users', UserController::class);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Administrators
-        |--------------------------------------------------------------------------
-        */
-        Route::get('/administrators', [AdministratorController::class, 'index'])->name('administrators.index');
-        Route::get('/administrators/{administrator}', [AdministratorController::class, 'show'])->name('administrators.show');
 
         /*
         |--------------------------------------------------------------------------
