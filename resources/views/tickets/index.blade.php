@@ -23,6 +23,17 @@
                 </select>
             </div>
 
+            <div style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(37, 99, 235, 0.18); border-radius: 18px; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);">
+                <span style="font-size: 13px; font-weight: 700; color: #365277; letter-spacing: 0.02em;">Filtrer par service</span>
+                <select name="service_id" onchange="this.form.submit()" style="min-width: 210px; margin-top: 0; border-radius: 14px; border: 1px solid rgba(37, 99, 235, 0.22); background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 6px 18px rgba(37, 99, 235, 0.08); font-weight: 600;">
+                    <option value="">Tous les services</option>
+                    @foreach($services as $service)
+                        <option value="{{ $service->id }}" {{ (string) $serviceId === (string) $service->id ? 'selected' : '' }}>
+                            {{ $service->name }}{{ optional($service->hospital)->name ? ' - ' . $service->hospital->name : '' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
         </form>
 
         @if(!auth()->user()->isAdmin())
@@ -64,7 +75,6 @@
                         <th>Statut</th>
                         <th>File</th>
                         <th>Service / Hôpital</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,14 +103,6 @@
                                     <div style="font-size: 12px; color: var(--text-faint); margin-top: 4px;">
                                         {{ $ticket->queue->service->hospital->name }}
                                     </div>
-                                @endif
-                            </td>
-                            <td style="white-space: nowrap;">
-                                @if(auth()->user()->isAgent() && $ticket->status !== 'ANNULE' && $ticket->status !== 'TERMINE')
-                                    <form action="{{ route('tickets.cancel', $ticket->id) }}" method="POST" style="display:inline;">
-                                        @csrf
-                                        <button type="submit" class="btn btn-warning btn-sm">Annuler</button>
-                                    </form>
                                 @endif
                             </td>
                         </tr>
