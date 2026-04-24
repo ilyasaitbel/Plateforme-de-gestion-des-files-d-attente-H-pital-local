@@ -3,13 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Agent extends Model
 {
     protected $fillable = [
         'user_id',
         'queue_id',
+        'hospital_id',
     ];
 
     public function user()
@@ -22,17 +22,8 @@ class Agent extends Model
         return $this->belongsTo(Queue::class);
     }
 
-    public function hospital(): HasOneThrough
+    public function hospital()
     {
-        return $this->hasOneThrough(
-            Hospital::class,
-            Service::class,
-            'id',
-            'id',
-            'queue_id',
-            'hospital_id'
-        )->join('queues', 'queues.service_id', '=', 'services.id')
-            ->whereColumn('queues.id', 'agents.queue_id')
-            ->select('hospitals.*');
+        return $this->belongsTo(Hospital::class);
     }
 }

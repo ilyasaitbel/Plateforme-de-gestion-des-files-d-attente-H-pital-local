@@ -13,11 +13,9 @@ class AgentController extends Controller
     {
         $hospitalId = $request->user()->administrator->hospital_id;
 
-        $agents = Agent::with(['user', 'queue.service.hospital'])
+        $agents = Agent::with(['user', 'hospital', 'queue.service'])
             ->when($hospitalId, function ($query) use ($hospitalId) {
-                $query->whereHas('queue.service', function ($serviceQuery) use ($hospitalId) {
-                    $serviceQuery->where('hospital_id', $hospitalId);
-                });
+                $query->where('hospital_id', $hospitalId);
             })
             ->get();
 
@@ -48,9 +46,12 @@ class AgentController extends Controller
             'password' => $request->password,
         ]);
 
+        $queue = Queue::with('service')->findOrFail($request->queue_id);
+
         Agent::create([
             'user_id' => $user->id,
-            'queue_id' => $request->queue_id,
+            'queue_id' => $queue->id,
+            'hospital_id' => $queue->service->hospital_id,
         ]);
 
         return redirect()->route('agents.index')
@@ -59,14 +60,14 @@ class AgentController extends Controller
 
     public function show(Agent $agent)
     {
-        $agent->load('user', 'queue.service.hospital');
+        $agent->load('user', 'hospital', 'queue.service');
 
         return view('agents.show', compact('agent'));
     }
 
     public function edit(Request $request, Agent $agent)
     {
-        $agent->load('queue.service.hospital');
+        $agent->load('hospital', 'queue.service');
 
         $hospitalId = $request->user()->administrator->hospital_id;
 
@@ -81,8 +82,11 @@ class AgentController extends Controller
             'queue_id' => 'required|exists:queues,id',
         ]);
 
+        $queue = Queue::with('service')->findOrFail($request->queue_id);
+
         $agent->update([
-            'queue_id' => $request->queue_id,
+            'queue_id' => $queue->id,
+            'hospital_id' => $queue->service->hospital_id,
         ]);
 
         return redirect()->route('agents.index')

@@ -74,9 +74,12 @@ class DatabaseSeeder extends Seeder
                 ]);
 
                 // Affectation à une queue aléatoire
+                $queue = $queues[array_rand($queues)];
+
                 Agent::create([
-                    'user_id'  => $agentUser->id,
-                    'queue_id' => $queues[array_rand($queues)]->id,
+                    'user_id'     => $agentUser->id,
+                    'queue_id'    => $queue->id,
+                    'hospital_id' => $hospital->id,
                 ]);
             }
 

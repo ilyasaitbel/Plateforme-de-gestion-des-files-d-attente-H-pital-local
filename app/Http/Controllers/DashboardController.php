@@ -27,9 +27,7 @@ class DashboardController extends Controller
 
             $hospitals_count = 1;
             $services_count = $hospital->services()->count();
-            $agents_count = Agent::whereHas('queue.service', function ($query) use ($hospital) {
-                $query->where('hospital_id', $hospital->id);
-            })->count();
+            $agents_count = Agent::where('hospital_id', $hospital->id)->count();
             $citoyens_count = Citoyen::whereHas('tickets.queue.service', function ($query) use ($hospital) {
                 $query->where('hospital_id', $hospital->id);
             })->count();
@@ -57,10 +55,10 @@ class DashboardController extends Controller
 
         if ($user->isAgent()) {
             $agent = $user->agent;
-            $agent?->load('queue.service.hospital');
+            $agent?->load('hospital', 'queue.service');
 
             $current_queue = $agent?->queue?->load('service.hospital');
-            $hospital = optional(optional($current_queue)->service)->hospital;
+            $hospital = $agent?->hospital ?? optional(optional($current_queue)->service)->hospital;
             $queues = $current_queue ? collect([$current_queue]) : collect();
             $waiting_tickets = collect();
             $waiting_count = 0;

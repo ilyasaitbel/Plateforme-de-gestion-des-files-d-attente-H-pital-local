@@ -17,6 +17,8 @@
                     <tr>
                         <th>Nom</th>
                         <th>Email</th>
+                        <th>File</th>
+                        <th>Service</th>
                         <th>Hôpital</th>
                         <th>Actions</th>
                     </tr>
@@ -26,7 +28,9 @@
                         <tr>
                             <td>{{ $agent->user->name ?? '—' }}</td>
                             <td>{{ $agent->user->email ?? '—' }}</td>
-                            <td>{{ $agent->queue->service->hospital->name ?? '—' }}</td>
+                            <td>{{ $agent->queue?->name ?? '—' }}</td>
+                            <td>{{ $agent->queue?->service?->name ?? '—' }}</td>
+                            <td>{{ $agent->hospital?->name ?? '—' }}</td>
                             <td>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                     <a href="{{ route('agents.edit', $agent) }}" class="btn btn-warning">Modifier</a>
@@ -44,7 +48,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" style="text-align: center;">Aucun agent trouvé</td>
+                            <td colspan="6" style="text-align: center;">Aucun agent trouvé</td>
                         </tr>
                     @endforelse
                 </tbody>
