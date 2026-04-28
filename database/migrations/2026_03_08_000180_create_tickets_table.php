@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('queue_id')->constrained()->cascadeOnDelete();
             $table->foreignId('citoyen_id')->constrained()->cascadeOnDelete();
             $table->unsignedInteger('number');
-            $table->enum('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS', 'TERMINE', 'ANNULE'])->default('EN_ATTENTE');
+            $table->enum('status', ['EN_ATTENTE', 'APPELE', 'TERMINE', 'ANNULE'])->default('EN_ATTENTE');
             $table->timestamps();
 
             $table->unique(['queue_id', 'number']);

@@ -73,6 +73,7 @@
                     <tr>
                         <th>Numéro</th>
                         <th>Statut</th>
+                        <th>Citoyen</th>
                         <th>File</th>
                         <th>Service / Hôpital</th>
                     </tr>
@@ -86,8 +87,6 @@
                                     <span class="badge badge-blue">En attente</span>
                                 @elseif($ticket->status === 'APPELE')
                                     <span class="badge badge-orange">Appelé</span>
-                                @elseif($ticket->status === 'EN_COURS')
-                                    <span class="badge badge-yellow">En cours</span>
                                 @elseif($ticket->status === 'TERMINE')
                                     <span class="badge badge-green">Terminé</span>
                                 @elseif($ticket->status === 'ANNULE')
@@ -96,6 +95,7 @@
                                     <span class="badge badge-blue">{{ $ticket->status }}</span>
                                 @endif
                             </td>
+                            <td>{{ optional(optional($ticket->citoyen)->user)->name ?? '—' }}</td>
                             <td>{{ $ticket->queue->name ?? '—' }}</td>
                             <td>
                                 {{ $ticket->queue->service->name ?? '—' }}

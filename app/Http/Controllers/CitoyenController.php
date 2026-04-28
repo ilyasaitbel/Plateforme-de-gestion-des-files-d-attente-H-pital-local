@@ -37,56 +37,6 @@ class CitoyenController extends Controller
         return view('citoyens', compact('citoyens'));
     }
 
-    public function show(Citoyen $citoyen)
-    {
-        $citoyen->load(['user', 'tickets']);
-
-        return view('citoyens.show', compact('citoyen'));
-    }
-
-    public function create()
-    {
-        $users = User::all();
-
-        return view('citoyens.create', compact('users'));
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
-        ]);
-
-        Citoyen::create($data);
-
-        return redirect()->route('citoyens.index');
-    }
-
-    public function edit(Citoyen $citoyen)
-    {
-        $users = User::all();
-
-        return view('citoyens.edit', compact('citoyen', 'users'));
-    }
-
-    public function update(Request $request, Citoyen $citoyen)
-    {
-        $data = $request->validate([
-            'user_id' => 'sometimes|exists:users,id',
-        ]);
-
-        $citoyen->update($data);
-
-        return redirect()->route('citoyens.index');
-    }
-
-    public function destroy(Citoyen $citoyen)
-    {
-        $citoyen->delete();
-
-        return redirect()->route('citoyens.index');
-    }
-
     public function requestTicket(Request $request, Citoyen $citoyen)
     {
         $data = $request->validate([

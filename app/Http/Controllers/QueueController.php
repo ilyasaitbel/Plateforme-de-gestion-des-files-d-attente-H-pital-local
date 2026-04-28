@@ -126,7 +126,7 @@ class QueueController extends Controller
         }
 
         Ticket::where('queue_id', $queue->id)
-            ->whereIn('status', ['APPELE', 'EN_COURS'])
+            ->where('status', 'APPELE')
             ->update([
                 'status' => 'TERMINE',
             ]);

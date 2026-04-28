@@ -194,12 +194,12 @@ class TicketController extends Controller
         }
 
         $existingActiveTicket = Ticket::where('citoyen_id', $citoyenId)
-            ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
+            ->whereIn('status', ['EN_ATTENTE', 'APPELE'])
             ->first();
 
         if ($existingActiveTicket) {
             return back()->withErrors([
-                'queue_id' => 'Ce citoyen a déjà un ticket actif. Impossible de créer un deuxième ticket en attente.',
+                'queue_id' => 'Impossible de créer un deuxième ticket en attente.',
             ])->withInput();
         }
 
@@ -245,7 +245,7 @@ class TicketController extends Controller
 
         return Ticket::with('queue.service.hospital')
             ->where('citoyen_id', $user->citoyen->id)
-            ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
+            ->whereIn('status', ['EN_ATTENTE', 'APPELE'])
             ->latest()
             ->first();
     }

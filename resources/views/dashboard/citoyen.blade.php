@@ -25,6 +25,11 @@
         }
     </style>
 
+    <div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+        <div style="font-size: 1rem; color: #6c757d;">Citoyen connecté</div>
+        <div style="font-size: 1.5rem; font-weight: 700; color: #1f2d3d;">{{ auth()->user()->name }}</div>
+    </div>
+
     @if(isset($active_ticket))
         <!-- Active Ticket Card -->
         <div class="ticket-display" style="background: linear-gradient(135deg, #198754 0%, #157347 100%);">
@@ -54,8 +59,6 @@
                         <span class="badge badge-blue" style="font-size: 1rem;">EN ATTENTE</span>
                     @elseif($active_ticket->status === 'APPELE')
                         <span class="badge badge-orange" style="font-size: 1rem;">APPELÉ</span>
-                    @elseif($active_ticket->status === 'EN_COURS')
-                        <span class="badge badge-yellow" style="font-size: 1rem;">EN COURS</span>
                     @endif
                 </div>
             </div>

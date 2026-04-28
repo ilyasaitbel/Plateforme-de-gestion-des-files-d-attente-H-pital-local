@@ -57,8 +57,8 @@ class DashboardController extends Controller
             $agent = $user->agent;
             $agent?->load('hospital', 'queue.service');
 
-            $current_queue = $agent?->queue?->load('service.hospital');
-            $hospital = $agent?->hospital ?? optional(optional($current_queue)->service)->hospital;
+            $current_queue = $agent->queue?->load('service.hospital');
+            $hospital = $agent->hospital;
             $queues = $current_queue ? collect([$current_queue]) : collect();
             $waiting_tickets = collect();
             $waiting_count = 0;
@@ -76,7 +76,7 @@ class DashboardController extends Controller
 
                 $current_ticket = Ticket::with('citoyen.user')
                     ->where('queue_id', $current_queue->id)
-                    ->whereIn('status', ['APPELE', 'EN_COURS'])
+                    ->where('status', 'APPELE')
                     ->latest('updated_at')
                     ->first();
 
@@ -107,7 +107,7 @@ class DashboardController extends Controller
                 $tickets = $citoyen->tickets()->with('queue.service.hospital');
 
                 $active_ticket = (clone $tickets)
-                    ->whereIn('status', ['EN_ATTENTE', 'APPELE', 'EN_COURS'])
+                    ->whereIn('status', ['EN_ATTENTE', 'APPELE'])
                     ->latest()
                     ->first();
 

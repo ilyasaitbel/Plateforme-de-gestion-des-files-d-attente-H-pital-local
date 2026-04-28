@@ -88,7 +88,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hospitals/create', [HospitalController::class, 'create'])->name('hospitals.create');
         Route::post('/hospitals', [HospitalController::class, 'store'])->name('hospitals.store');
         Route::resource('services', ServiceController::class);
-        Route::resource('citoyens', CitoyenController::class);
+        Route::get('citoyens', [CitoyenController::class, 'index']);
         Route::resource('agents', AgentController::class);
         Route::resource('users', UserController::class);
 
