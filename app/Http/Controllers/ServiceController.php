@@ -30,7 +30,7 @@ class ServiceController extends Controller
     {
         $hospitalId = $this->getAdministratorHospitalId($request);
 
-        if (! $hospitalId) {
+        if (!$hospitalId) {
             return back()
                 ->withInput()
                 ->with('error', 'Aucun hôpital n’est associé à votre compte administrateur.');
@@ -81,6 +81,12 @@ class ServiceController extends Controller
 
     private function getAdministratorHospitalId(Request $request)
     {
-        return optional(optional($request->user())->administrator)->hospital_id;
+        $user = $request->user();
+
+        if ($user && $user->administrator) {
+            return $user->administrator->hospital_id;
+        }
+
+        return null;
     }
 }
