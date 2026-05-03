@@ -282,20 +282,6 @@
                         <div id="service-note" class="ticket-inline-note info"></div>
                     </div>
 
-                    @if(!auth()->user()->isCitoyen())
-                        <div class="ticket-field ticket-field--full">
-                            <label for="citoyen_id">Citoyen</label>
-                            <select id="citoyen_id" name="citoyen_id">
-                                <option value="">-- Choisir un citoyen --</option>
-                                @foreach($citoyens as $citoyen)
-                                    <option value="{{ $citoyen->id }}" {{ (string) old('citoyen_id') === (string) $citoyen->id ? 'selected' : '' }}>
-                                        {{ $citoyen->user->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endif
-
                     <div class="ticket-field ticket-field--full">
                         <input type="hidden" name="queue_id" id="queue_id" value="{{ $selectedQueueId }}">
                         <div id="selected-preview" class="ticket-selected-preview">
